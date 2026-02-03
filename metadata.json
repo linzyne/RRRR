@@ -1,0 +1,7 @@
+{
+  "name": "Mission Automator",
+  "description": "A purchase and review verification platform that automates the workflow between sellers and customers using AI-powered image validation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
