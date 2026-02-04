@@ -37,11 +37,14 @@ export interface Product {
   id: string;
   name: string;        // 품목명 (키워드)
   guideText: string;   // 구매 가이드 문구
-  reviewGuideText: string; // 후기 가이드 문구
   refundAmount: number; // 환금액
   totalQuota: number;  // 일일 배정 갯수
   remainingQuota: number; // 남은 갯수
   thumbnail?: string;  // 썸네일 이미지 (Base64)
+}
+
+export interface GlobalSettings {
+  reviewGuideText: string;
 }
 
 export interface Submission {

@@ -18,11 +18,54 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Product, Submission } from '../types';
+import { Product, Submission, GlobalSettings } from '../types';
 
 // 컬렉션 참조
 const productsCollection = collection(db, 'products');
 const submissionsCollection = collection(db, 'submissions');
+const settingsCollection = collection(db, 'settings');
+
+// ==================== Global Settings (전역 설정) ====================
+
+/**
+ * 전역 설정 실시간 구독
+ */
+export const subscribeToGlobalSettings = (callback: (settings: GlobalSettings) => void) => {
+    const docRef = doc(db, 'settings', 'review_guide');
+    return onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+            callback(snapshot.data() as GlobalSettings);
+        } else {
+            // 기본값 제공
+            callback({ reviewGuideText: '' });
+        }
+    }, (error) => {
+        console.error('Global Settings 구독 에러:', error);
+    });
+};
+
+/**
+ * 전역 설정 수정
+ */
+export const updateGlobalSettings = async (updates: Partial<GlobalSettings>): Promise<void> => {
+    const docRef = doc(db, 'settings', 'review_guide');
+    await updateDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+    }).catch(async (error) => {
+        // 문서가 없으면 만듦
+        if (error.code === 'not-found') {
+            const { setDoc } = await import('firebase/firestore');
+            await setDoc(docRef, {
+                ...updates,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+        } else {
+            throw error;
+        }
+    });
+};
 
 // ==================== Products (품목) ====================
 
