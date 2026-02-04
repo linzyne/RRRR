@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Product, Submission, AppMode, CustomerView } from './types';
-import { extractOrderDetails } from './services/geminiService';
 import {
   subscribeToProducts,
   subscribeToSubmissions,
@@ -30,7 +29,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // UI States
-  const [isAnalyzing, setIsAnalyzing] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSubmittedType, setLastSubmittedType] = useState<'apply' | 'review' | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null); // 이미지 미리보기 모달
@@ -245,12 +243,7 @@ const App: React.FC = () => {
         type: 'purchase'
       });
 
-      // 백그라운드 AI 분석 트리거
-      if (newId) {
-        extractOrderDetails(combinedProofImageUrl).then(aiData => {
-          updateSubmission(newId, aiData);
-        }).catch(err => console.error("[OCR] AI Auto Analysis failed:", err));
-      }
+      // 품목 잔여 수량 감소
 
       // 품목 잔여 수량 감소
       if (product) {
@@ -335,10 +328,7 @@ const App: React.FC = () => {
           type: existingSub.type === 'purchase' ? 'both' : existingSub.type
         });
 
-        // 후기 이미지로 재분석 트리거
-        extractOrderDetails(combinedReviewImageUrl).then(aiData => {
-          updateSubmission(existingSub.id, aiData);
-        }).catch(err => console.error("[OCR] AI Auto Re-analysis failed:", err));
+
 
       } else {
         // 새 후기 전용 신청 생성
@@ -355,12 +345,7 @@ const App: React.FC = () => {
           type: 'review'
         });
 
-        // 백그라운드 AI 분석 트리거
-        if (newId) {
-          extractOrderDetails(combinedReviewImageUrl).then(aiData => {
-            updateSubmission(newId, aiData);
-          }).catch(err => console.error("[OCR] AI Auto Analysis failed:", err));
-        }
+
       }
 
       setLastSubmittedType('review');
@@ -382,25 +367,7 @@ const App: React.FC = () => {
     setReviewForm({ kakaoNick: '', phoneNumber: '', bankName: '', accountHolder: '', accountNumber: '', reviewImages: [] });
   };
 
-  const analyzeOne = async (submissionId: string) => {
-    const sub = submissions.find(s => s.id === submissionId);
-    if (!sub) return;
 
-    // 후기 이미지가 있으면 후기 이미지를 우선적으로 분석 (보통 주문번호가 더 명확함)
-    const imageToAnalyze = sub.reviewProofImage || sub.proofImage;
-    if (!imageToAnalyze) return;
-
-    setIsAnalyzing(submissionId);
-    try {
-      const aiData = await extractOrderDetails(imageToAnalyze);
-      await updateSubmission(submissionId, aiData);
-    } catch (error) {
-      console.error('AI 분석 실패:', error);
-      alert('AI 분석에 실패했습니다.');
-    } finally {
-      setIsAnalyzing(null);
-    }
-  };
   // 엑셀 다운로드 (CSV 가상 생성)
   const downloadExcel = (filterType: 'purchase' | 'review') => {
     let baseList = submissions.filter(s =>
@@ -729,7 +696,6 @@ const App: React.FC = () => {
                           <th className="px-4 py-4 w-32">날짜</th>
                           <th className="px-4 py-4">품목명</th>
                           <th className="px-4 py-4">카톡닉네임</th>
-                          <th className="px-4 py-4">주문자명</th>
                           <th className="px-4 py-4">주문번호</th>
                           <th className="px-4 py-4 text-right">환금액</th>
                           <th className="px-4 py-4 text-center">인증샷</th>
@@ -742,7 +708,7 @@ const App: React.FC = () => {
                             .sort((a, b) => b.date.localeCompare(a.date));
 
                           if (filtered.length === 0) {
-                            return <tr><td colSpan={11} className="px-6 py-12 text-center text-gray-300 font-bold">아직 신청 데이터가 없습니다.</td></tr>;
+                            return <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-300 font-bold">아직 신청 데이터가 없습니다.</td></tr>;
                           }
 
                           // 날짜별 그룹화
@@ -761,7 +727,7 @@ const App: React.FC = () => {
                               <React.Fragment key={date}>
                                 {/* 날짜 헤더 */}
                                 <tr className="bg-gray-50 border-y border-gray-100">
-                                  <td colSpan={11} className="px-4 py-2">
+                                  <td colSpan={10} className="px-4 py-2">
                                     <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">{date}</span>
                                   </td>
                                 </tr>
@@ -782,15 +748,6 @@ const App: React.FC = () => {
                                       <td className="px-4 py-4 text-gray-600 text-xs font-bold">{s.date}</td>
                                       <td className="px-4 py-4 font-bold text-gray-800 max-w-[120px] truncate">{s.productName || '-'}</td>
                                       <td className="px-4 py-4 font-bold text-gray-800">{s.kakaoNick}</td>
-                                      <td className="px-4 py-4">
-                                        <input
-                                          type="text"
-                                          className="w-full bg-transparent border-b border-transparent focus:border-indigo-600 focus:bg-white outline-none font-bold text-indigo-600 px-1 transition-all"
-                                          value={s.ordererName || ''}
-                                          placeholder="성함 입력"
-                                          onChange={(e) => updateSubmission(s.id, { ordererName: e.target.value })}
-                                        />
-                                      </td>
                                       <td className="px-4 py-4 text-gray-600 text-xs">
                                         <input
                                           type="text"
@@ -823,7 +780,7 @@ const App: React.FC = () => {
                                 })}
                                 {/* 날짜별 총계 (하단) */}
                                 <tr className="bg-indigo-50/30 border-b border-indigo-100/50">
-                                  <td colSpan={11} className="px-4 py-3 text-right">
+                                  <td colSpan={10} className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-2">
                                       <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{date} 일일 총계:</span>
                                       <span className="text-sm font-black text-indigo-600">{items.length}건</span>
