@@ -38,7 +38,7 @@ const App: React.FC = () => {
 
   // Admin states
   const [newProduct, setNewProduct] = useState<Partial<Product>>({
-    name: '', guideText: '', refundAmount: 0, totalQuota: 10, thumbnail: ''
+    name: '', guideText: '', reviewGuideText: '', refundAmount: 0, totalQuota: 10, thumbnail: ''
   });
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>(''); // 로컬 미리보기용
@@ -123,6 +123,7 @@ const App: React.FC = () => {
         await updateProduct(editingProductId, {
           name: newProduct.name!,
           guideText: newProduct.guideText || '',
+          reviewGuideText: newProduct.reviewGuideText || '',
           refundAmount: newProduct.refundAmount || 0,
           totalQuota: newProduct.totalQuota || 0,
           remainingQuota: newProduct.totalQuota || 0,
@@ -135,6 +136,7 @@ const App: React.FC = () => {
         await addProduct({
           name: newProduct.name,
           guideText: newProduct.guideText || '',
+          reviewGuideText: newProduct.reviewGuideText || '',
           refundAmount: newProduct.refundAmount || 0,
           totalQuota: newProduct.totalQuota || 10,
           remainingQuota: newProduct.totalQuota || 10,
@@ -143,7 +145,7 @@ const App: React.FC = () => {
         alert("품목이 등록되었습니다.");
       }
 
-      setNewProduct({ name: '', guideText: '', refundAmount: 0, totalQuota: 10, thumbnail: '' });
+      setNewProduct({ name: '', guideText: '', reviewGuideText: '', refundAmount: 0, totalQuota: 10, thumbnail: '' });
       setThumbnailPreview('');
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
@@ -159,6 +161,7 @@ const App: React.FC = () => {
     setNewProduct({
       name: product.name,
       guideText: product.guideText,
+      reviewGuideText: product.reviewGuideText || '',
       refundAmount: product.refundAmount,
       totalQuota: product.totalQuota,
       thumbnail: product.thumbnail
@@ -169,7 +172,7 @@ const App: React.FC = () => {
 
   const cancelEdit = () => {
     setEditingProductId(null);
-    setNewProduct({ name: '', guideText: '', refundAmount: 0, totalQuota: 10, thumbnail: '' });
+    setNewProduct({ name: '', guideText: '', reviewGuideText: '', refundAmount: 0, totalQuota: 10, thumbnail: '' });
     setThumbnailPreview('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -584,14 +587,25 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="md:col-span-5 h-full">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">미션 수행 가이드 안내</p>
-                    <textarea
-                      placeholder="신청 시 고객이 참고할 가이드 문구를 입력하세요."
-                      className="w-full h-[256px] md:h-[220px] p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none resize-none text-sm leading-relaxed"
-                      value={newProduct.guideText}
-                      onChange={e => setNewProduct({ ...newProduct, guideText: e.target.value })}
-                    />
+                  <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">구매 미션 가이드</p>
+                      <textarea
+                        placeholder="신청 시 고객이 참고할 가이드 문구"
+                        className="w-full h-32 p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-blue-600 outline-none resize-none text-sm leading-relaxed"
+                        value={newProduct.guideText}
+                        onChange={e => setNewProduct({ ...newProduct, guideText: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2 ml-1">후기 미션 가이드</p>
+                      <textarea
+                        placeholder="후기 인증 시 고객이 참고할 가이드 문구"
+                        className="w-full h-32 p-4 bg-gray-50 rounded-xl font-bold border-2 border-transparent focus:border-orange-500 outline-none resize-none text-sm leading-relaxed"
+                        value={newProduct.reviewGuideText}
+                        onChange={e => setNewProduct({ ...newProduct, reviewGuideText: e.target.value })}
+                      />
+                    </div>
                   </div>
 
                   <div className="md:col-span-4 space-y-4">
@@ -1225,6 +1239,26 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* 후기 가이드 (상품 정보 매칭 시 노출) */}
+                    {(() => {
+                      const sub = submissions.find(s => s.kakaoNick === reviewForm.kakaoNick && s.phoneNumber === reviewForm.phoneNumber);
+                      if (!sub || !sub.productId) return null;
+                      const prod = products.find(p => p.id === sub.productId);
+                      if (!prod || !prod.reviewGuideText) return null;
+
+                      return (
+                        <div className="space-y-4 animate-in slide-in-from-top-4">
+                          <div className="w-full bg-orange-100 p-5 rounded-[24px] border border-orange-200 shadow-sm flex items-center gap-4">
+                            <span className="text-2xl">💡</span>
+                            <div className="text-left">
+                              <h4 className="font-black text-orange-900 uppercase text-[10px] tracking-widest mb-1">후기 작성 가이드</h4>
+                              <p className="text-orange-800 font-bold text-xs whitespace-pre-wrap leading-relaxed">{prod.reviewGuideText}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* 2단계: 인증샷 업로드 */}
                     {reviewForm.kakaoNick && reviewForm.phoneNumber && (
