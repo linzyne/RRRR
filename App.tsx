@@ -484,6 +484,21 @@ const App: React.FC = () => {
     }
   };
 
+  // 날짜별 그룹 선택 핸들러
+  const handleSelectDateGroup = (items: Submission[]) => {
+    const itemIds = items.map(s => s.id);
+    const allSelected = itemIds.every(id => selectedIds.includes(id));
+
+    if (allSelected) {
+      // 해당 날짜 항목 모두 해제
+      setSelectedIds(prev => prev.filter(id => !itemIds.includes(id)));
+    } else {
+      // 해당 날짜 항목 중 미선택 항목만 추가
+      const newIds = itemIds.filter(id => !selectedIds.includes(id));
+      setSelectedIds(prev => [...prev, ...newIds]);
+    }
+  };
+
   const selectedProduct = products.find(p => p.id === selectedProductId);
 
   // 로딩 화면
@@ -726,8 +741,16 @@ const App: React.FC = () => {
                             return (
                               <React.Fragment key={date}>
                                 {/* 날짜 헤더 */}
-                                <tr className="bg-gray-50 border-y border-gray-100">
-                                  <td colSpan={10} className="px-4 py-2">
+                                <tr className="bg-gray-50 border-y border-gray-100 italic">
+                                  <td className="px-4 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                      checked={items.every(item => selectedIds.includes(item.id))}
+                                      onChange={() => handleSelectDateGroup(items)}
+                                    />
+                                  </td>
+                                  <td colSpan={6} className="px-4 py-2">
                                     <span className="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">{date}</span>
                                   </td>
                                 </tr>
@@ -839,8 +862,16 @@ const App: React.FC = () => {
                             return (
                               <React.Fragment key={`review-group-${date}`}>
                                 {/* 날짜 헤더 */}
-                                <tr className="bg-gray-50 border-y border-gray-100">
-                                  <td colSpan={5} className="px-6 py-2">
+                                <tr className="bg-gray-50 border-y border-gray-100 italic">
+                                  <td className="px-6 py-2 text-center">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                      checked={items.every(item => selectedIds.includes(item.id))}
+                                      onChange={() => handleSelectDateGroup(items)}
+                                    />
+                                  </td>
+                                  <td colSpan={4} className="px-6 py-2">
                                     <span className="text-[10px] font-black bg-orange-600 text-white px-2 py-0.5 rounded-full">{date}</span>
                                   </td>
                                 </tr>
