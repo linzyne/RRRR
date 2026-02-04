@@ -154,6 +154,14 @@ export const updateSubmission = async (id: string, updates: Partial<Submission>)
 };
 
 /**
+ * 신청/후기 삭제
+ */
+export const deleteSubmission = async (id: string): Promise<void> => {
+    const docRef = doc(db, 'submissions', id);
+    await deleteDoc(docRef);
+};
+
+/**
  * 닉네임과 전화번호로 기존 신청 찾기 (후기 등록 시 사용)
  */
 export const findSubmissionByUserInfo = async (kakaoNick: string, phoneNumber: string): Promise<Submission | null> => {
